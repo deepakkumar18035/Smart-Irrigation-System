@@ -4,7 +4,6 @@ class ThingSpeak:
         self.channelId = channelId
         self.readApi = readApi
         self.writeApi = writeApi
-
     def queryDataList(self,FieldId,result=1):
         url = "https://api.thingspeak.com/channels/"+str(self.channelId)+"/fields/"+str(FieldId)+".json"
         ReadHeader = {
@@ -14,6 +13,17 @@ class ThingSpeak:
         try:
             req = requests.get(url, params=ReadHeader)
             return req.json()["feeds"]
+        except:
+            return None    
+    def queryAllDataList(self,result=1):
+        url = "https://api.thingspeak.com/channels/"+str(self.channelId)+"/feeds.json"
+        ReadHeader = {
+            "api_key":self.readApi,
+            "results":result
+        }
+        try:
+            req = requests.get(url, params=ReadHeader)
+            return req.json()
         except:
             return None
     def queryLatest(self,FieldId):

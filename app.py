@@ -1,4 +1,5 @@
 from flask import Flask, render_template, url_for
+from datetime import datetime, timedelta
 from modules.ThingSpeak import ThingSpeak as TS
 
 UI_Channel = TS(channelId=1364680,
@@ -13,22 +14,26 @@ app = Flask(__name__,static_folder='templates')
 @app.route('/')
 def default():
    AvData = UI_Channel.queryAllLatest()
-   SenseData = Sense_Channel.queryAllLatest()
+   tempData = Sense_Channel.queryAllDataList(2)['feeds']
+   SenseData={}
+   for i in range(2):
+      for j in range(1,9):
+         if tempData[i]["field"+str(j)] !=None:
+            SenseData["field"+str(j)] = tempData[i]["field"+str(j)]
    Averages = {
-      "Temperature":int(float([0 if AvData == None else AvData["field2"]][0])),
-      "Humidity":int(float([0 if AvData == None else AvData["field3"]][0])),
-      "Rainfall":int(float([0 if AvData == None else AvData["field4"]][0])),
-      "Waterusage":int(float([0 if AvData == None else AvData["field1"]][0]))
+      "Temperature":int(float([0 if (AvData == None or AvData == -1) else AvData["field2"]][0])),
+      "Humidity":int(float([0 if (AvData == None or AvData == -1) else AvData["field3"]][0])),
+      "Rainfall":int(float([0 if (AvData == None or AvData == -1) else AvData["field4"]][0])),
+      "Waterusage":int(float([0 if (AvData == None or AvData == -1) else AvData["field1"]][0]))
    }
-   print(SenseData)
    Accutators = {
-      "MotorPump":["No Data" if SenseData==None else ["ON" if SenseData["field5"] == "1" else "OFF"][0]][0],
-      "FertilizerPump":["No Data" if SenseData==None else ["ON" if SenseData["field6"] == "1" else "OFF"][0]][0],
-      "EDS":["No Data" if SenseData==None else ["ON" if SenseData["field7"] == "1" else "OFF"][0]][0]
+      "MotorPump":["ON" if SenseData["field5"]=='1' else ["OFF" if SenseData["field5"] == '0' else "No Data"][0]][0],
+      "FertilizerPump":["ON" if SenseData["field6"]=='1' else ["OFF" if SenseData["field6"] == "0" else "No Data"][0]][0],
+      "EDS":["ON" if SenseData["field7"]=='1' else ["OFF" if SenseData["field7"] == '0' else "No Data"][0]][0]
    }
    FSD = {
-      "LFD":"20/06/2021",
-      "Moisture":36
+      "LFD":(datetime.now() - timedelta(minutes=int(SenseData["field8"]))).strftime('%d/%m/%Y'),
+      "Moisture":int(float([0 if (AvData == None or AvData == -1) else AvData["field5"]][0]))
    }
    return render_template('index.html',Averages=Averages,Accutators=Accutators,FSD=FSD)
 
