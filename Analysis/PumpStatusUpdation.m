@@ -13,9 +13,10 @@ LFDFieldId = 8;
 fertilzePeriod = 24 * 90;
 
 % Get Sensor Data
-SenseData = thingSpeakRead(1360392,'Fields',[1:8],'NumPoints',1,'ReadKey',Sense_readAPIKey);
+SenseData = thingSpeakRead(1360392,'Fields',[1:8],'NumPoints',2,'ReadKey',Sense_readAPIKey);
 
 % Error control
+SenseData = [SenseData(2,1:4) SenseData(1,5:8)]
 if isnan(SenseData(LFDFieldId))
     SenseData(LFDFieldId) = 0
 end
