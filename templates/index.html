@@ -14,6 +14,76 @@
         a:hover { text-decoration: none; }
         a:active { text-decoration: none; }
     </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js" type="text/javascript"></script>
+    <script type="text/javascript" language="javascript">
+        var mqtt;
+        var reconnectTimeout = 2000;
+        var host = "192.168.1.4";
+        var port = 9001;
+        var stat_motor = 0;
+        var stat_fertilizer = 0;
+        var stat_eds = 0;
+        function onConnect(){
+            console.log("Connected Sucessfully.");
+            mqtt.subscribe("Motor");
+            mqtt.subscribe("Fertilizer");
+            mqtt.subscribe("EDS");
+        }
+        function onFailure(){
+            console.log("Connection attempt to host failed.");
+            setTimeout(MQTTconnect,reconnectTimeout);
+        }
+        function onMessageArrived(msg){
+            topic = msg.destinationName;
+            status = msg.payloadString;
+            var x = document.getElementById(topic);
+            var y = x.getElementsByClassName("text-white-50 small m-0")[0];
+            switch (status) {
+                case 'ON':
+                    switch (topic) {
+                        case 'Motor':stat_motor = 1;break;
+                        case 'Fertilizer':stat_fertilizer=1;break;
+                        default:stat_eds=1;break;
+                    }
+                    x.className = 'card text-white bg-danger shadow';
+                    y.innerHTML = "ON";
+                    break;
+                default:
+                    switch (topic) {
+                            case 'Motor':stat_motor = 0;break;
+                            case 'Fertilizer':stat_fertilizer=0;break;
+                            default:stat_eds=0;break;
+                        }
+                    x.className = 'card text-white bg-success shadow';
+                    y.innerHTML = "OFF";
+                    break;
+            }
+            console.log(topic + status);
+    
+        }
+        function MQTTconnect(){
+            console.log("connecting to "+host+":"+port);
+            mqtt = new Paho.MQTT.Client(host,port,"clinetjs");
+            var options = {
+                timeout:3,
+                onSuccess: onConnect,
+                onFailure: onFailure,
+            };
+            mqtt.onMessageArrived = onMessageArrived;
+            mqtt.connect(options);
+        }
+        function publish(name){
+            var x = document.getElementById(name);
+            var csName = x.className;
+            if (csName == 'card text-white bg-danger shadow') {
+                message = new Paho.MQTT.Message("OFF");
+            } else {
+                message = new Paho.MQTT.Message("ON");
+            }
+            message.destinationName = name;
+            mqtt.send(message);
+        }
+        </script>
 </head>
 
 <body id="page-top">
@@ -208,7 +278,7 @@
                                 <h6 id="chartHead" class="text-primary font-weight-bold m-0">Chart Heading - Failed to Populate on loading</h6>
                             </div>
                             <div class="card-body">
-                                <iframe id="chartValue" width="450" height="260" style="border: 1px solid #cccccc;" src=""></iframe>
+                                <iframe id="chartValue" width="450" height="260" style="border: 1px solid #cccccc;top:0;left:0;" src=""></iframe>
                             </div>
                         </div>
                     </div>
@@ -244,11 +314,11 @@
                     <div class="col">
                         <div class="row">
                             <div class="col-lg-6 mb-4">
-                                <a href="#" onclick="mqttPublish(5)" >
-                                    {% if Accutators["EDS"] == "OFF" %}
-                                    <div class="card text-white bg-primary shadow">
+                                <a onclick="publish('Motor')" >
+                                    {% if Accutators["MotorPump"] == "OFF" %}
+                                    <div id="Motor" class="card text-white bg-success shadow">
                                     {% else %}
-                                    <div class="card text-white bg-success shadow">
+                                    <div id="Motor" class="card text-white bg-danger shadow">
                                     {% endif %}
                                         <div class="card-body">
                                             <p class="m-0">Motor Pump</p>
@@ -258,11 +328,11 @@
                                 </a>
                             </div>
                             <div class="col-lg-6 mb-4">
-                                <a href="#" onclick="mqttPublish(6)" >
-                                    {% if Accutators["EDS"] == "OFF" %}
-                                    <div class="card text-white bg-success shadow">
+                                <a onclick="publish('Fertilizer')" >
+                                    {% if Accutators["FertilizerPump"] == "OFF" %}
+                                    <div id="Fertilizer" class="card text-white bg-success shadow">
                                     {% else %}
-                                    <div class="card text-white bg-primary shadow">
+                                    <div  id="Fertilizer" class="card text-white bg-danger shadow">
                                     {% endif %}
                                         <div class="card-body">
                                             <p class="m-0">Fertilizer Pump</p>
@@ -272,11 +342,11 @@
                                 </a>
                             </div>
                             <div class="col-lg-6 col-xl-12 mb-4">
-                                <a href="#" onclick="mqttPublish(7)" >
+                                <a onclick="publish('EDS')" >
                                     {% if Accutators["EDS"] == "OFF" %}
-                                    <div class="card text-white bg-info shadow">
+                                    <div id="EDS" class="card text-white bg-success shadow">
                                     {% else %}
-                                    <div class="card text-white bg-danger shadow">
+                                    <div id="EDS" class="card text-white bg-danger shadow">
                                     {% endif %}
                                         <div class="card-body">
                                             <p class="m-0">Emergency Drain System</p>
@@ -322,9 +392,7 @@
             }
         }
         window.onload = changeChart(1);
-        function mqttPublish(Id){
-
-        }
+        MQTTconnect();
     </script>
 </body>
 

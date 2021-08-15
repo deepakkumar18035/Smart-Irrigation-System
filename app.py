@@ -38,4 +38,5 @@ def default():
    return render_template('index.html',Averages=Averages,Accutators=Accutators,FSD=FSD)
 
 if __name__ == '__main__':
-   app.run(debug=True)
+   #app.run(host="0.0.0.0",debug=True)
+   app.run()
